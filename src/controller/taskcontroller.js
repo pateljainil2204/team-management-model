@@ -52,12 +52,6 @@ const updatetask = async (req, res) => {
     const project = await Project.findById(task.project);
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    // check if user is member of the project
-    const isMember = project.members
-      .filter(Boolean)
-      .map(id => id)
-      .includes(req.user.id);
-
     // allow update if Admin, creator
     if (
       req.user.role === "Member" &&
@@ -67,8 +61,7 @@ const updatetask = async (req, res) => {
     ) {
       return res.status(403).json({ message: "Access denied" });
     }
-
-    // only Admin or creator can mark as Done
+   // only Admin or creator can mark as Done
     if (
       req.body.status === "Done" &&
       req.user.role !== "Admin" &&
@@ -76,7 +69,6 @@ const updatetask = async (req, res) => {
     ) {
       return res.status(403).json({ message: "Only Admin or creator can mark as Done" });
     }
-    //  update
     task.title = req.body.title || task.title;
     task.description = req.body.description || task.description;
     task.status = req.body.status || task.status;
