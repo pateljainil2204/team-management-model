@@ -65,7 +65,7 @@ const updatetask = async (req, res) => {
     if (
       req.body.status === "Done" &&
       req.user.role !== "Admin" &&
-      task.createdBy.toString() !== req.user.id
+      task.createdBy !== req.user.id
     ) {
       return res.status(403).json({ message: "Only Admin or creator can mark as Done" });
     }
