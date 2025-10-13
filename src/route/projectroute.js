@@ -5,6 +5,7 @@ import {
   deleteproject, 
   assignmember, 
   removemember, 
+  getProjectWithMembers,
   getproject
 } from "../controller/projectcontroller.js";
 import authentication from "../middleware/authmiddleware.js";
@@ -18,5 +19,6 @@ router.delete("/:id",authentication, roleMiddleware("Admin"), deleteproject);
 router.post("/:id/assign", authentication, roleMiddleware("Admin"), assignmember);
 router.post("/:id/remove",authentication, roleMiddleware("Admin"), removemember);
 router.get("/my",authentication, roleMiddleware("Admin"), getproject);
+router.get("/:id/member", authentication, roleMiddleware(["Admin"]),getProjectWithMembers);
 
 export default router;

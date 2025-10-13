@@ -1,4 +1,5 @@
 import Project from "../model/projectmodel.js";
+import logactivity from "../Activity/activitylogger.js";
 
 // create project admin 
 const createproject = async (req, res) => {
@@ -10,6 +11,10 @@ const createproject = async (req, res) => {
             description, 
             createdBy: req.user.id,
         });
+
+       // logger
+        await logactivity(req.user.id, "Created Project", { projectId: project._id });
+
         res.status(201).json(project);
     } catch (error) {
       res.status(401).json({ message : error.message });
@@ -26,6 +31,9 @@ const updateproject = async (req, res) => {
        project.description =  req.body.description || project.description;
 
        await project.save();
+      // logger
+       await logactivity(req.user.id, "Updated Project", { projectId: project._id });
+
        res.status(200).json({ message : "updated project",project});
     } catch (error) {
        res.status(401).json({ message : error.message });
@@ -39,6 +47,9 @@ const deleteproject = async (req, res) => {
       if(!project) return res.status(404).json({ message : "project not found" });
 
       await project.deleteOne();
+      // logger
+      await logactivity(req.user.id, "Deleted Project", { projectId: project._id });
+
       res.status(200).json({ message : "project deleted successfully" });
     } catch (error) {
         res.status(400).json({ message : error.message })
@@ -47,23 +58,26 @@ const deleteproject = async (req, res) => {
 
 // assign member 
 const assignmember = async (req, res) => {
-    try {
-      const { userId } = req.body;
-      const project = await Project.findById(req.params.id);
-      if(!project) return res.status(404).json({ message : "project not found" });
-      
-      console.log("check >>", !project.members.map(id => id).includes(userId));
-      
-     if (!project.members.map(id => id).includes(userId)) {
-      project.members.push(userId);
-     }
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ message: "userId is required" });
 
-    await project.save();
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: "project not found" });
 
-      res.status(200).json(project);
-    } catch (error) {
-      res.status(400).json({ message : error.message })
+    project.members = project.members || [];
+
+    if (project.members.map(id => id.toString()).includes(userId)) {
+      return res.status(400).json({ message: "Member is already assigned to this project" });
     }
+
+    project.members.push(userId);
+    await project.save();
+    await logactivity(req.user.id, "Assigned Member", { projectId: project._id, assignedUser: userId });
+    res.status(200).json(project);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 // remove member 
@@ -75,7 +89,10 @@ const removemember = async (req, res) => {
 
       project.members = project.members.filter((id) =>  id !== userId);
       await project.save();
-      
+     // logger 
+      await logactivity(req.user.id, "Removed Member", 
+          { projectId: project._id, removedUser: userId });
+
       res.status(200).json(project);
     } catch (error) {
        res.status(400).json({ message : error.message })
@@ -92,4 +109,19 @@ const getproject = async (req, res) => {
     }
 };
 
-export {createproject, updateproject, deleteproject, assignmember, removemember, getproject};
+const getProjectWithMembers = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const project = await Project.findById(projectId)
+      .populate("members", "username email role") // show username, email, role
+      .populate("createdBy", "username email role");
+
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    res.status(200).json(project);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export {createproject, updateproject, deleteproject, assignmember, removemember, getproject, getProjectWithMembers };

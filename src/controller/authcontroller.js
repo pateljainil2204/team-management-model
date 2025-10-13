@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../model/usermodel.js";
+import logactivity from "../Activity/activitylogger.js";
 
 const saltRounds = 10;
 
@@ -22,6 +23,8 @@ const register = async (req, res) => {
       role: role === "Admin" ? "Admin" : "Member",
     });
 
+    await logactivity(user._id, "user registered"); // logger
+
     res.status(201).json({ message: "User registered successfully", user });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -41,6 +44,8 @@ const login = async (req, res) => {
 
     const payload = { id: user._id, role: user.role };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    await logactivity(user._id, "User Logged In");  //loggere
 
     res.status(200).json({ message: "Login successful", token, user });
   } catch (error) {
