@@ -1,4 +1,6 @@
 import Project from "../model/projectmodel.js";
+import Task from "../model/taskmodel.js";
+import paginate from "../config/pagination.js";
 import logactivity from "../Activity/activitylogger.js";
 
 // create project admin 
@@ -101,27 +103,55 @@ const removemember = async (req, res) => {
 
 // get project 
 const getproject = async (req, res) => {
-    try {
-      const projects = await Project.find();
-      res.status(200).json(projects);
-    } catch (error) {
-      res.status(400).json({ message : error.message})
-    }
+  try {
+    const paginatedProjects = await paginate(Project, req);
+    const projects = await Project.find({ _id: { $in: paginatedProjects.data.map(p => p._id) } });
+    res.status(200).json(projects);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const getProjectWithMembers = async (req, res) => {
   try {
     const projectId = req.params.id;
     const project = await Project.findById(projectId)
-      .populate("members", "username email role") // show username, email, role
+      .populate("members", "username email role")
       .populate("createdBy", "username email role");
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    res.status(200).json(project);
+    const tasks = await Task.find({ project: projectId })
+      .populate("assignedTo", "username email role")
+      .populate("createdBy", "username email role");
+
+    res.status(200).json({
+      project,
+      tasks,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export {createproject, updateproject, deleteproject, assignmember, removemember, getproject, getProjectWithMembers };
+
+const gettasksbyprojectId = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+
+    const tasks = await Task.find({ project: projectId })
+      .populate("assignedTo", "username email role")
+      .populate("createdBy", "username email role");
+
+    if (!tasks || tasks.length === 0) {
+      return res.status(404).json({ message: "No tasks found for this project" });
+    }
+
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export {createproject, updateproject, deleteproject, assignmember, removemember, getproject, 
+        getProjectWithMembers, gettasksbyprojectId };

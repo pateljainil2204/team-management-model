@@ -25,7 +25,14 @@ const register = async (req, res) => {
 
     await logactivity(user._id, "user registered"); // logger
 
-    res.status(201).json({ message: "User registered successfully", user });
+    res.status(201).json({
+  message: "User registered successfully",
+  user: {
+    name: user.name,
+    email: user.email
+  }
+});
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -47,7 +54,14 @@ const login = async (req, res) => {
 
     await logactivity(user._id, "User Logged In");  //loggere
 
-    res.status(200).json({ message: "Login successful", token, user });
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
